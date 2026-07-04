@@ -19,8 +19,7 @@ CGameEntitySystem* g_pGameEntitySystem = nullptr;
 CEntitySystem* g_pEntitySystem = nullptr;
 
 
-std::random_device g_rd;
-std::mt19937 g_gen(g_rd());
+std::mt19937 g_gen;
 
 
 // API
@@ -83,7 +82,9 @@ void StartupServer() {
     g_pEntitySystem = utils->GetCEntitySystem();
     gpGlobals = utils->GetCGlobalVars();
 
-    LoadConfig();
+    std::random_device rd;
+    g_gen.seed(rd());
+
 }
 
 void SetModel(CCSPlayerPawn* pPawn, std::string path){
@@ -169,11 +170,12 @@ void jb_skins::AllPluginsLoaded() {
 
     LoadConfig();
 
-    utils->HookEvent(g_PLID,"player_spawn",OnPlayerSpawn);
-
     for (const auto& model : mWardenModels) precacher_api->AddPrecache(model.second.c_str());
     for (const auto& model : mCTModels) precacher_api->AddPrecache(model.second.c_str());
     for (const auto& model : mTModels) precacher_api->AddPrecache(model.second.c_str());
+
+    utils->HookEvent(g_PLID,"player_spawn",OnPlayerSpawn);
+
 
     jailbreak_api->OnNewWardenListener(g_PLID,[](int iSlot){
         auto pController = CCSPlayerController::FromSlot(iSlot); 
