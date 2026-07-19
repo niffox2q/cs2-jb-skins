@@ -31,6 +31,8 @@ std::map<std::string,std::string> mWardenModels;
 std::map<std::string,std::string> mCTModels;
 std::map<std::string,std::string> mTModels;
 
+std::string g_sOriginalModel[64 + 1];
+
 void LoadConfig() {
     KeyValues* config = new KeyValues("Config");
     const char* path = "addons/configs/Jailbreak/skins.ini";
@@ -182,8 +184,34 @@ void jb_skins::AllPluginsLoaded() {
         if (!pController) return;
         auto pPawn = pController->GetPlayerPawn();
         if (!pPawn || !pPawn->IsAlive()) return;
+
+        const char* szCurModel = pPawn->GetModelName().String();
+        if (szCurModel && szCurModel[0]) {
+            g_sOriginalModel[iSlot] = szCurModel;
+        }
+
         std::string model = GetRandomModelFromMap(mWardenModels);
         SetModel(pPawn,model);
+    });
+
+    jailbreak_api->OnWardenClearListener(g_PLID, [](int iSlot){
+        if (iSlot < 0 || iSlot > 64) return;
+        
+        if (g_sOriginalModel[iSlot].empty()) return; 
+
+        auto pController = CCSPlayerController::FromSlot(iSlot);
+        if (!pController) return;
+        auto pPawn = pController->GetPlayerPawn();
+        if (!pPawn || !pPawn->IsAlive()) return;
+
+        SetModel(pPawn, g_sOriginalModel[iSlot]);
+    });
+
+    utils->HookEvent(g_PLID, "player_disconnect", [](const char* szName, IGameEvent* pEvent, bool bDontBroadcast){
+        int iSlot = pEvent->GetInt("userid"); 
+        if (iSlot >= 0 && 64 <= 64) {
+            g_sOriginalModel[iSlot] = "";
+        }
     });
 
     utils->StartupServer(g_PLID, StartupServer);
